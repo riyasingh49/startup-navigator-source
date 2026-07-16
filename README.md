@@ -48,19 +48,24 @@ user123
 
 ## Architecture
 
-The app is built as a Next.js single-page experience with componentized sections:
+The app is built as a Next.js app with a small server-rendered route and a client-side interactive shell:
 
 ```text
-Next.js App
-  -> Founder UI pages
-  -> Local startup knowledge base
-  -> RAG-style retrieval and answer generation
-  -> Demo login state
-  -> Admin content management
-  -> Dashboard and search history
+app/
+  page.tsx                 -> server route entry
+  layout.tsx               -> metadata and document shell
+components/
+  startup-navigator-app.tsx -> client app shell and state orchestration
+  pages.tsx                -> Home, Explore, AI Search, Dashboard, Admin, Login, About, Contact
+  auth-panels.tsx          -> founder/admin login and admin password gate
+  ui.tsx                   -> reusable UI primitives
+lib/
+  startup-content.ts       -> startup articles, resources, and prompt notes
+  rag.ts                   -> local RAG-style retrieval and answer generation
+  types.ts                 -> shared TypeScript types
 ```
 
-The current version uses browser state for demo data so evaluators can test the full experience without a database or paid API key. In production, the same structure can be connected to a database such as PostgreSQL, Supabase, Firebase, or Cloudflare D1.
+The current version uses browser state and localStorage for demo data/search history so evaluators can test the full experience without a database or paid API key. In production, the same structure can be connected to a database such as PostgreSQL, Supabase, Firebase, or Cloudflare D1.
 
 ## AI / RAG Implementation
 
