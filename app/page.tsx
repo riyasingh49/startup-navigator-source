@@ -185,6 +185,8 @@ export default function Home() {
   const [searching, setSearching] = useState(false);
   const [session, setSession] = useState<"guest" | "user" | "admin">("guest");
   const [loginMessage, setLoginMessage] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminError, setAdminError] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState({
     title: "",
@@ -223,13 +225,24 @@ export default function Home() {
     }, 650);
   }
 
-  function login(role: "user" | "admin") {
-    setSession(role);
-    setLoginMessage(
-      role === "admin"
-        ? "Logged in as admin. You can manage articles and resources."
-        : "Logged in as founder. Your search history is now visible.",
-    );
+  function loginUser() {
+    setSession("user");
+    setLoginMessage("Logged in as founder. Your search history is now visible.");
+    setActivePage("Dashboard");
+  }
+
+  function loginAdmin(event: FormEvent) {
+    event.preventDefault();
+    if (adminPassword === "admin123") {
+      setSession("admin");
+      setAdminPassword("");
+      setAdminError("");
+      setLoginMessage("Logged in as admin. You can manage articles and resources.");
+      setActivePage("Admin");
+      return;
+    }
+
+    setAdminError("Incorrect admin password. Please try admin123 for this demo.");
   }
 
   function saveArticle(event: FormEvent) {
@@ -558,14 +571,16 @@ export default function Home() {
 
         {activePage === "Admin" && (
           <PageShell title="Admin Section" eyebrow="Manage articles">
-            {session !== "admin" && (
-              <div className="mb-5 rounded border border-[#e8c46c] bg-[#fff7df] p-4 text-sm font-bold text-[#6b5416]">
-                Demo note: log in as admin to represent protected access. Admin credentials:
-                admin@startupnavigator.com / admin123
-              </div>
-            )}
-            <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-              <form onSubmit={saveArticle} className="rounded border border-[#d8ded4] bg-white p-5 shadow-sm">
+            {session !== "admin" ? (
+              <AdminPasswordPanel
+                adminPassword={adminPassword}
+                adminError={adminError}
+                setAdminPassword={setAdminPassword}
+                onSubmit={loginAdmin}
+              />
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                <form onSubmit={saveArticle} className="rounded border border-[#d8ded4] bg-white p-5 shadow-sm">
                 <h2 className="text-lg font-black">{editingId ? "Edit article" : "Add article"}</h2>
                 <Field
                   label="Title"
@@ -605,9 +620,9 @@ export default function Home() {
                 <button className="mt-4 w-full rounded bg-[#153b37] px-4 py-3 text-sm font-black text-white">
                   {editingId ? "Save Changes" : "Add Article"}
                 </button>
-              </form>
+                </form>
 
-              <div className="rounded border border-[#d8ded4] bg-white p-5 shadow-sm">
+                <div className="rounded border border-[#d8ded4] bg-white p-5 shadow-sm">
                 <h2 className="text-lg font-black">Content library</h2>
                 <div className="mt-4 space-y-3">
                   {articles.map((article) => (
@@ -637,8 +652,9 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+                </div>
               </div>
-            </div>
+            )}
           </PageShell>
         )}
 
@@ -649,13 +665,13 @@ export default function Home() {
                 title="Founder login"
                 email="founder@startupnavigator.com"
                 password="user123"
-                onClick={() => login("user")}
+                onClick={loginUser}
               />
-              <LoginCard
-                title="Admin login"
-                email="admin@startupnavigator.com"
-                password="admin123"
-                onClick={() => login("admin")}
+              <AdminLoginCard
+                adminPassword={adminPassword}
+                adminError={adminError}
+                setAdminPassword={setAdminPassword}
+                onSubmit={loginAdmin}
               />
             </div>
             {loginMessage && (
@@ -799,6 +815,81 @@ function LoginCard({
         Continue as {title.replace(" login", "")}
       </button>
     </div>
+  );
+}
+
+function AdminLoginCard({
+  adminPassword,
+  adminError,
+  setAdminPassword,
+  onSubmit,
+}: {
+  adminPassword: string;
+  adminError: string;
+  setAdminPassword: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="rounded border border-[#d8ded4] bg-white p-5 shadow-sm">
+      <h2 className="text-xl font-black">Admin login</h2>
+      <p className="mt-3 text-sm font-semibold text-[#4d5d55]">
+        Email: admin@startupnavigator.com
+      </p>
+      <label className="mt-4 block text-sm font-black">
+        Password
+        <input
+          type="password"
+          value={adminPassword}
+          onChange={(event) => setAdminPassword(event.target.value)}
+          placeholder="Enter admin password"
+          className="mt-2 block w-full rounded border border-[#d8ded4] bg-[#f7f8f5] px-3 py-3 text-sm font-normal outline-none focus:border-[#153b37]"
+        />
+      </label>
+      {adminError && <p className="mt-3 text-sm font-bold text-[#a84632]">{adminError}</p>}
+      <button className="mt-5 rounded bg-[#153b37] px-4 py-3 text-sm font-black text-white">
+        Open Admin Dashboard
+      </button>
+      <p className="mt-3 text-xs font-semibold text-[#65736b]">Demo password: admin123</p>
+    </form>
+  );
+}
+
+function AdminPasswordPanel({
+  adminPassword,
+  adminError,
+  setAdminPassword,
+  onSubmit,
+}: {
+  adminPassword: string;
+  adminError: string;
+  setAdminPassword: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="mx-auto max-w-xl rounded border border-[#d8ded4] bg-white p-6 shadow-sm"
+    >
+      <h2 className="text-2xl font-black">Admin access required</h2>
+      <p className="mt-3 leading-7 text-[#4d5d55]">
+        Enter the admin password to open the dashboard where articles and resources can be managed.
+      </p>
+      <label className="mt-5 block text-sm font-black">
+        Admin password
+        <input
+          type="password"
+          value={adminPassword}
+          onChange={(event) => setAdminPassword(event.target.value)}
+          placeholder="Enter admin password"
+          className="mt-2 block w-full rounded border border-[#d8ded4] bg-[#f7f8f5] px-3 py-3 text-sm font-normal outline-none focus:border-[#153b37]"
+        />
+      </label>
+      {adminError && <p className="mt-3 text-sm font-bold text-[#a84632]">{adminError}</p>}
+      <button className="mt-5 w-full rounded bg-[#153b37] px-4 py-3 text-sm font-black text-white">
+        Unlock Admin Dashboard
+      </button>
+      <p className="mt-3 text-xs font-semibold text-[#65736b]">Demo password: admin123</p>
+    </form>
   );
 }
 
