@@ -10,6 +10,12 @@ Add the deployed URL here after publishing:
 https://your-deployment-url
 ```
 
+## GitHub Repository
+
+```text
+https://github.com/riyasingh49/startup-navigator-source
+```
+
 ## Demo Login Credentials
 
 Admin:
@@ -86,7 +92,7 @@ Improve mobile UX, empty states, loading states, admin editing, and submission R
 
 Requirements:
 
-- Node.js 22.13 or newer
+- Node.js 20.19 or newer
 
 Run locally:
 
@@ -114,8 +120,8 @@ Recommended free platforms:
 
 Typical Vercel deployment:
 
-1. Push this project to GitHub.
-2. Import the GitHub repository into Vercel.
+1. Open Vercel and choose Add New Project.
+2. Import `riyasingh49/startup-navigator-source` from GitHub.
 3. Use the default Next.js settings.
 4. Deploy.
 5. Add the deployed URL to this README.

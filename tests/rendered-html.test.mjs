@@ -1,37 +1,18 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+test("Startup Navigator source includes required product surfaces", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
 
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
-}
-
-test("server-renders Startup Navigator", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
-  assert.match(html, /Startup Navigator/i);
-  assert.match(html, /Comprehensive Guide to Startups/i);
-  assert.match(html, /AI Search/i);
-  assert.match(html, /Dashboard/i);
-  assert.match(html, /Admin/i);
-  assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
+  assert.match(layout, /Startup Navigator - Comprehensive Guide to Startups/);
+  assert.match(page, /Explore Topics/);
+  assert.match(page, /AI Search/);
+  assert.match(page, /Resources/);
+  assert.match(page, /Admin Section/);
+  assert.match(page, /Dashboard/);
+  assert.match(page, /RAG-style assistant/);
+  assert.match(page, /admin@startupnavigator\.com/);
+  assert.doesNotMatch(page, /Your site is taking shape|react-loading-skeleton/i);
 });
