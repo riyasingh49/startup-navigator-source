@@ -4,10 +4,10 @@ Startup Navigator is a modern AI-powered founder guide built with Next.js. It he
 
 ## Live URL
 
-Add the deployed URL here after publishing:
+Deployed URL:
 
 ```text
-https://your-deployment-url
+https://startup-navigator-source.vercel.app
 ```
 
 ## GitHub Repository
@@ -112,29 +112,3 @@ Test production build:
 npm run build
 npm test
 ```
-
-## Deployment Process
-
-Recommended free platforms:
-
-- Vercel
-- Netlify
-- Render
-- Railway
-- Firebase Hosting
-
-Typical Vercel deployment:
-
-1. Open Vercel and choose Add New Project.
-2. Import `riyasingh49/startup-navigator-source` from GitHub.
-3. Use the default Next.js settings.
-4. Deploy.
-5. Add the deployed URL to this README.
-
-## Future Improvements
-
-- Replace demo login with real authentication.
-- Store articles, resources, users, and searches in a database.
-- Add embeddings and vector search for stronger RAG.
-- Connect OpenAI, Gemini, or Claude for natural language generation.
-- Add role-based access control for admin operations.
