@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Article = {
   id: number;
@@ -24,7 +24,10 @@ type SearchRecord = {
   query: string;
   answer: string;
   sources: string[];
+  createdAt: string;
 };
+
+const SEARCH_HISTORY_KEY = "startup-navigator-search-history";
 
 const seedArticles: Article[] = [
   {
@@ -183,6 +186,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState<SearchRecord[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const [session, setSession] = useState<"guest" | "user" | "admin">("guest");
   const [loginMessage, setLoginMessage] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
@@ -203,10 +207,46 @@ export default function Home() {
     return Object.entries(counts);
   }, [articles]);
 
+  const topSearchSources = useMemo(() => {
+    const counts = searchHistory.reduce<Record<string, number>>((acc, record) => {
+      record.sources.forEach((source) => {
+        acc[source] = (acc[source] ?? 0) + 1;
+      });
+      return acc;
+    }, {});
+
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
+  }, [searchHistory]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(SEARCH_HISTORY_KEY);
+      if (stored) {
+        setSearchHistory(JSON.parse(stored) as SearchRecord[]);
+      }
+    } catch {
+      setSearchError("Search history could not be loaded on this device.");
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory));
+    } catch {
+      setSearchError("Search history could not be saved on this device.");
+    }
+  }, [searchHistory]);
+
   function runSearch(event: FormEvent) {
     event.preventDefault();
     const query = searchQuery.trim();
-    if (!query) return;
+    if (!query) {
+      setSearchError("Please enter a question before searching.");
+      return;
+    }
+    setSearchError("");
     setSearching(true);
     window.setTimeout(() => {
       const result = buildAnswer(query, articles);
@@ -216,6 +256,7 @@ export default function Home() {
           query,
           answer: result.answer,
           sources: result.sources,
+          createdAt: new Date().toLocaleString(),
         },
         ...current,
       ]);
@@ -394,6 +435,11 @@ export default function Home() {
                   {searching ? "Searching..." : "Ask AI Search"}
                 </button>
               </form>
+              {searchError && (
+                <p className="mt-3 rounded border border-[#efc8bc] bg-[#fff4f1] p-3 text-sm font-bold text-[#a84632]">
+                  {searchError}
+                </p>
+              )}
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {[
                   ["8", "Startup guides"],
@@ -475,6 +521,11 @@ export default function Home() {
                 <button className="mt-4 w-full rounded bg-[#153b37] px-4 py-3 text-sm font-black text-white">
                   {searching ? "Retrieving sources..." : "Generate Answer"}
                 </button>
+                {searchError && (
+                  <p className="mt-3 rounded border border-[#efc8bc] bg-[#fff4f1] p-3 text-sm font-bold text-[#a84632]">
+                    {searchError}
+                  </p>
+                )}
                 <p className="mt-3 text-xs font-semibold text-[#65736b]">
                   Demo method: keyword retrieval over stored articles, then a generated summary with sources.
                 </p>
@@ -529,7 +580,7 @@ export default function Home() {
               <StatCard label="Articles" value={articles.length.toString()} />
               <StatCard label="Resources" value={resources.length.toString()} />
               <StatCard label="Searches" value={searchHistory.length.toString()} />
-              <StatCard label="Session" value={session === "guest" ? "Guest" : session} />
+              <StatCard label="Topics" value={topicStats.length.toString()} />
             </div>
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
               <div className="rounded border border-[#d8ded4] bg-white p-5">
@@ -552,17 +603,62 @@ export default function Home() {
                 </div>
               </div>
               <div className="rounded border border-[#d8ded4] bg-white p-5">
-                <h2 className="text-lg font-black">Search history</h2>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-black">Search history</h2>
+                    <p className="mt-1 text-sm font-semibold text-[#65736b]">
+                      Saved on this device for demo review.
+                    </p>
+                  </div>
+                  {searchHistory.length > 0 && (
+                    <button
+                      onClick={() => setSearchHistory([])}
+                      className="rounded border border-[#a84632] px-3 py-2 text-xs font-black text-[#a84632]"
+                    >
+                      Clear History
+                    </button>
+                  )}
+                </div>
                 <div className="mt-4 space-y-3">
                   {searchHistory.length ? (
                     searchHistory.map((record) => (
                       <div key={record.id} className="rounded bg-[#f7f8f5] p-3 text-sm font-semibold">
-                        {record.query}
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                          <span>{record.query}</span>
+                          <span className="text-xs text-[#65736b]">{record.createdAt}</span>
+                        </div>
+                        <p className="mt-2 text-xs text-[#65736b]">
+                          Sources: {record.sources.join(", ")}
+                        </p>
                       </div>
                     ))
                   ) : (
                     <EmptyState text="Searches appear here after founders use AI Search." />
                   )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+              <div className="rounded border border-[#d8ded4] bg-white p-5">
+                <h2 className="text-lg font-black">Top retrieved sources</h2>
+                <div className="mt-4 space-y-3">
+                  {topSearchSources.length ? (
+                    topSearchSources.map(([source, count]) => (
+                      <div key={source} className="flex items-center justify-between rounded bg-[#f7f8f5] p-3">
+                        <span className="text-sm font-bold">{source}</span>
+                        <span className="rounded bg-[#dfe8d8] px-2 py-1 text-xs font-black">{count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <EmptyState text="Retrieved source stats appear after AI Search is used." />
+                  )}
+                </div>
+              </div>
+              <div className="rounded border border-[#d8ded4] bg-white p-5">
+                <h2 className="text-lg font-black">Account state</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <StatCard label="Current role" value={session === "guest" ? "Guest" : session} />
+                  <StatCard label="Last search" value={searchHistory[0]?.createdAt ?? "None"} />
                 </div>
               </div>
             </div>
